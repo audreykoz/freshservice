@@ -13,138 +13,91 @@ def get_calls():
 
 get_calls.counter = 0     
 
-def get_tickets(domain="ncsa"):
+def get_tickets():
     """Returns all tickets from freshservice 
-    
-    Parameters
-    ----------
-    domain: str, optional 
-        Specify the domain that the API call will be made to. Default is "ncsa"
         
     """
     headers={'Content-Type': 'application/json'}
-    tickets = requests.get("https://"+domain+".freshservice.com/helpdesk/tickets.json", headers=headers,auth=(fresh.user,fresh.password))
+    tickets = requests.get(f"https://{fresh.domain}.freshservice.com/helpdesk/tickets.json", headers=headers,auth=(fresh.user,fresh.password))
     get_calls()
     return json.loads(tickets.content)
 
-def get_changes(domain="ncsa"): 
+def get_changes(): 
     """Returns all changes from freshservice 
-    
-    Parameters
-    ----------
-    domain: str, optional 
-        Specify the domain that the API call will be made to. Default is "ncsa"
         
     """
     headers={'Content-Type': 'application/json'}
-    changes = requests.get("https://"+domain+".freshservice.com/itil/changes.json", headers=headers,auth=(fresh.user,fresh.password))
+    changes = requests.get(f"https://{fresh.domain}.freshservice.com/itil/changes.json", headers=headers,auth=(fresh.user,fresh.password))
     get_calls()
     return json.loads(changes.content)
 
-def get_releases(domain="ncsa"): 
+def get_releases(): 
     """Returns all releases from freshservice 
-    
-    Parameters
-    ----------
-    domain: str, optional 
-        Specify the domain that the API call will be made to. Default is "ncsa"
         
     """
     headers={'Content-Type': 'application/json'}
-    releases = requests.get("https://"+domain+".freshservice.com/itil/releases.json", headers=headers,auth=(fresh.user,fresh.password))
+    releases = requests.get(f"https://{fresh.domain}.freshservice.com/itil/releases.json", headers=headers,auth=(fresh.user,fresh.password))
     get_calls()
     return json.loads(releases.content)
 
 
-def get_problems(domain="ncsa"):
+def get_problems():
     """Returns all problems from freshservice 
-    
-    Parameters
-    ----------
-    domain: str, optional 
-        Specify the domain that the API call will be made to. Default is "ncsa"
-        
+   
     """
     headers={'Content-Type': 'application/json'}
-    problems = requests.get("https://"+domain+".freshservice.com/itil/problems.json", headers=headers,auth=(fresh.user,fresh.password))
+    problems = requests.get(f"https://{fresh.domain}.freshservice.com/itil/problems.json", headers=headers,auth=(fresh.user,fresh.password))
     get_calls()
     return json.loads(problems.content)
 
-def get_my_tasks(domain="ncsa"):
+def get_my_tasks():
     """Returns all agent tasks from freshservice 
     
-    Parameters
-    ----------
-    domain: str, optional 
-        Specify the domain that the API call will be made to. Default is "ncsa"
-        
     """
     headers={'Content-Type': 'application/json'}
-    tasks = requests.get("https://"+domain+".freshservice.com/itil/it_tasks.json", headers=headers,auth=(fresh.user,fresh.password))
+    tasks = requests.get(f"https://{fresh.domain}.freshservice.com/itil/it_tasks.json", headers=headers,auth=(fresh.user,fresh.password))
     get_calls()
     return json.loads(tasks.content)
     
-def get_users(domain="ncsa"):
+def get_users():
     """Returns all users from freshservice 
     
-    Parameters
-    ----------
-    domain: str, optional 
-        Specify the domain that the API call will be made to. Default is "ncsa"
-        
     """
     headers = {'Content-Type': 'application/json'}
-    users = requests.get("https://"+domain+".freshservice.com/itil/requesters.json", headers=headers,auth=(fresh.user,fresh.password))
+    users = requests.get(f"https://{fresh.domain}.freshservice.com/itil/requesters.json", headers=headers,auth=(fresh.user,fresh.password))
     get_calls()
     return json.loads(users.content)
 
-def get_agents(domain="ncsa"):
+def get_agents():
     """Returns all agents from freshservice 
-    
-    Parameters
-    ----------
-    domain: str, optional 
-        Specify the domain that the API call will be made to. Default is "ncsa"
         
     """
     headers = {'Content-Type': 'application/json'}
-    agents = requests.get("https://"+domain+".freshservice.com/agents.json", headers=headers,auth=(fresh.user,fresh.password))
+    agents = requests.get(f"https://{fresh.domain}.freshservice.com/agents.json", headers=headers,auth=(fresh.user,fresh.password))
     get_calls()
     return json.loads(agents.content)
 
-def get_rela_types(domain="ncsa"): 
+def get_rela_types(): 
     """Returns relationship types from freshservice 
     
-    Parameters
-    ----------
-    domain: str, optional 
-        Specify the domain that the API call will be made to. Default is "ncsa"
-        
     """
-    name = requests.get("https://"+domain+".freshservice.com/cmdb/relationship_types/list.json", auth=(fresh.user,fresh.password))
+    name = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/relationship_types/list.json", auth=(fresh.user,fresh.password))
     get_calls()
     return json.loads(name.content)
 
-def get_item_types(domain="ncsa"): 
+def get_item_types(): 
     """Returns asset types from freshservice 
-    
-    Parameters
-    ----------
-    domain: str, optional 
-        Specify the domain that the API call will be made to. Default is "ncsa"
         
     """
-    name = requests.get("https://"+domain+".freshservice.com/cmdb/ci_types.json", auth=(fresh.user,fresh.password))
+    name = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/ci_types.json", auth=(fresh.user,fresh.password))
     get_calls()
     return json.loads(name.content)
 
-def get_items(domain="ncsa", rela=False):
+def get_items(rela=False):
     """Returns all assets/CIs from freshservice 
     
     Parameters
     ----------
-    domain: str, optional 
-        Specify the domain that the API call will be made to. Default is "ncsa"
     rela: bool, optional 
         If True, asset relationships will be displayed. Default is False
         
@@ -153,7 +106,7 @@ def get_items(domain="ncsa", rela=False):
     page_num = 1
     freshtest1 = True 
     while freshtest1 == True: 
-        name = requests.get("https://"+domain+".freshservice.com/cmdb/items.json?page="+str(page_num), auth = (fresh.user, fresh.password)) 
+        name = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items.json?page="+str(page_num), auth = (fresh.user, fresh.password)) 
         get_calls()
         content = json.loads(name.content)
         page_num += 1 
@@ -164,10 +117,10 @@ def get_items(domain="ncsa", rela=False):
     if rela: 
         index = [item for item in asset_table.display_id]
         for item in index:
-            r = requests.get("https://ncsa.freshservice.com/cmdb/items/"+str(item)+"/relationships.json", auth = (fresh.user, fresh.password))
+            r = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items/"+str(item)+"/relationships.json", auth = (fresh.user, fresh.password))
             get_calls()
             relationship_data = json.loads(r.content)
-            name = requests.get("https://ncsa.freshservice.com/cmdb/items/"+str(item)+".json", auth = (fresh.user, fresh.password))
+            name = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items/"+str(item)+".json", auth = (fresh.user, fresh.password))
             get_calls()
             namedata = json.loads(name.content)
             print("Asset:\n",namedata)
@@ -176,7 +129,7 @@ def get_items(domain="ncsa", rela=False):
     else:         
         return asset_table
 
-def add_items(item_data="data.csv",domain="ncsa"): 
+def add_items(item_data="data.csv"): 
     """Add assets/CIs to freshservice CMDB
     
     Parameters
@@ -184,9 +137,6 @@ def add_items(item_data="data.csv",domain="ncsa"):
     item_data: str, optional
         Specifies the exported Archi file that contains assets/CIs that should be uploaded. 
         Default value is "data.csv"
-    domain: str, optional 
-        Specify the domain that the API call will be made to. Default is "ncsa"
-        
     """
     item_data = pd.read_csv(item_data)
     new_data = pd.DataFrame(columns=["Name","Type","GUID","Documentation"])
@@ -209,11 +159,11 @@ def add_items(item_data="data.csv",domain="ncsa"):
         data = json.dumps(d)
         headers = {'Content-Type': 'application/json'}
         print(data)
-        response = requests.post("https://"+domain+".freshservice.com/cmdb/items.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
+        response = requests.post(f"https://{fresh.domain}.freshservice.com/cmdb/items.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
         get_calls()
         print(response.content)
         
-def add_rela(rela_data = "relationships.csv",item_data="data.csv", domain="ncsa"):
+def add_rela(rela_data = "relationships.csv",item_data="data.csv"):
     """Add relationships to assets in freshservice CMDB. Assets must exist in the CMDB
     for a relationship to be created. 
     
@@ -225,8 +175,6 @@ def add_rela(rela_data = "relationships.csv",item_data="data.csv", domain="ncsa"
     item_data: str, optional
         Specifies the exported Archi file that contains assets/CIs that were uploaded to freshservice 
         Default value is "data.csv"
-    domain: str, optional 
-        Specify the domain that the API call will be made to. Default is "ncsa"
    """     
     rela_data = pd.read_csv(rela_data)
     item_data = pd.read_csv(item_data)
@@ -267,7 +215,7 @@ def add_rela(rela_data = "relationships.csv",item_data="data.csv", domain="ncsa"
     asset_table = pd.DataFrame()
     freshtest1 = True 
     while freshtest1 == True: 
-        name = requests.get("https://ncsa.freshservice.com/cmdb/items.json?page="+str(page_num), auth = (fresh.user, fresh.password)) 
+        name = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items.json?page="+str(page_num), auth = (fresh.user, fresh.password)) 
         get_calls()
         content = json.loads(name.content)
         page_num += 1
@@ -285,46 +233,42 @@ def add_rela(rela_data = "relationships.csv",item_data="data.csv", domain="ncsa"
         dictionary = {"type":"config_items", "type_id":[asset_table_names[second_item]], "relationship_type_id": third, "relationship_type":"forward_relationship"}
         data2 = json.dumps(dictionary)
         try:
-            response = requests.post('https://'+domain+'.freshservice.com/cmdb/items/'+str(asset_table_names[item])+'/associate.json', headers=headers, data=data2, auth=(fresh.api_key, fresh.password))
+            response = requests.post(f"https://{fresh.domain}.freshservice.com/cmdb/items/'+str(asset_table_names[item])+'/associate.json', headers=headers, data=data2, auth=(fresh.api_key, fresh.password))
             get_calls()
             print(response.content)
         except: 
             print("error")
             pass
 
-def delete_item(item, domain="ncsa"): 
+def delete_item(display_id): 
     """Delete a specified Asset/CI from the freshservice CMDB 
     
     Parameters
     ----------
-    item : str
+    display_id : str
         Specify the display_id of the asset/CI you would like to delete from 
         the CMDB. 
-    domain: str, optional     
-        Specify the domain that the API call will be made to. Default is "ncsa"
     """
     headers = {'Content-Type': 'application/json'}
-    testing = requests.delete("https://"+domain+".freshservice.com/cmdb/items/"+str(item)+".json", headers=headers, auth=(fresh.api_key, fresh.password))
+    testing = requests.delete(f"https://{fresh.domain}.freshservice.com/cmdb/items/"+str(display_id)+".json", headers=headers, auth=(fresh.api_key, fresh.password))
     get_calls()
     return json.loads(testing.content)
     
-def restore_item(item, domain="ncsa"): 
+def restore_item(display_id): 
     """Restore a deleted Asset/CI from the freshservice CMDB
     
     Parameters
     ----------
-    item : str
+    display_id : str
         Specify the display_id of the asset/CI you would like to restore in 
         the CMDB. 
-    domain: str, optional     
-        Specify the domain that the API call will be made to. Default is "ncsa"
     """
     headers = {'Content-Type': 'application/json'}
-    restore = requests.put("https://"+domain+".freshservice.com/cmdb/items/"+str(item)+"/restore.json", headers=headers, auth=(fresh.api_key, fresh.password))
+    restore = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/"+str(display_id)+"/restore.json", headers=headers, auth=(fresh.api_key, fresh.password))
     get_calls() 
     return json.loads(restore.content)
     
-def search_items(field_param,query_param,domain="ncsa"):
+def search_items(field_param,query_param):
     """Search items in the freshservice CMDB
     
     Parameters
@@ -335,11 +279,9 @@ def search_items(field_param,query_param,domain="ncsa"):
     query_param: str 
         What you would like to search for based off of the field_param. For example, 
         field_param="name", query_param="andrea". 
-    domain: str, optional     
-        Specify the domain that the API call will be made to. Default is "ncsa"        
     """
     headers={'Content-Type': 'application/json'}
-    search = requests.get("https://"+domain+".freshservice.com/cmdb/items/list.json?field="+field_param+"&q="+query_param, headers=headers,auth=(fresh.user,fresh.password))
+    search = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items/list.json?field="+field_param+"&q="+query_param, headers=headers,auth=(fresh.user,fresh.password))
     get_calls()
     return json.loads(search.content)
     
