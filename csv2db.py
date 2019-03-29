@@ -9,15 +9,14 @@ import freshlogin as fresh
 def get_calls():
     """Returns number of API calls made in Python session
     """
-    get_calls.counter +=1 
+    get_calls.counter += 1
 
 
 get_calls.counter = 0     
 
 
 def get_tickets():
-    """Returns all tickets from freshservice 
-        
+    """Returns all tickets from freshservice
     """
     headers={'Content-Type': 'application/json'}
     tickets = requests.get(f"https://{fresh.domain}.freshservice.com/helpdesk/tickets.json", headers=headers,auth=(fresh.user,fresh.password))
@@ -36,8 +35,7 @@ def get_changes():
 
 
 def get_releases(): 
-    """Returns all releases from freshservice 
-        
+    """Returns all releases from freshservice
     """
     headers={'Content-Type': 'application/json'}
     releases = requests.get(f"https://{fresh.domain}.freshservice.com/itil/releases.json", headers=headers,auth=(fresh.user,fresh.password))
@@ -46,8 +44,7 @@ def get_releases():
 
 
 def get_problems():
-    """Returns all problems from freshservice 
-   
+    """Returns all problems from freshservice
     """
     headers={'Content-Type': 'application/json'}
     problems = requests.get(f"https://{fresh.domain}.freshservice.com/itil/problems.json", headers=headers,auth=(fresh.user,fresh.password))
@@ -56,8 +53,7 @@ def get_problems():
 
 
 def get_tasks():
-    """Returns all agent tasks from freshservice 
-    
+    """Returns all agent tasks from freshservice
     """
     headers={'Content-Type': 'application/json'}
     tasks = requests.get(f"https://{fresh.domain}.freshservice.com/itil/it_tasks.json", headers=headers,auth=(fresh.user,fresh.password))
@@ -66,8 +62,7 @@ def get_tasks():
 
 
 def get_users():
-    """Returns all users from freshservice 
-    
+    """Returns all users from freshservice
     """
     headers = {'Content-Type': 'application/json'}
     users = requests.get(f"https://{fresh.domain}.freshservice.com/itil/requesters.json", headers=headers,auth=(fresh.user,fresh.password))
@@ -76,8 +71,7 @@ def get_users():
 
 
 def get_agents():
-    """Returns all agents from freshservice 
-        
+    """Returns all agents from freshservice
     """
     headers = {'Content-Type': 'application/json'}
     agents = requests.get(f"https://{fresh.domain}.freshservice.com/agents.json", headers=headers,auth=(fresh.user,fresh.password))
@@ -86,8 +80,7 @@ def get_agents():
 
 
 def get_rela_types(): 
-    """Returns relationship types from freshservice 
-    
+    """Returns relationship types from freshservice
     """
     name = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/relationship_types/list.json", auth=(fresh.user,fresh.password))
     get_calls()
@@ -95,8 +88,7 @@ def get_rela_types():
 
 
 def get_asset_types():
-    """Returns asset types from freshservice 
-        
+    """Returns asset types from freshservice
     """
     name = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/ci_types.json", auth=(fresh.user,fresh.password))
     get_calls()
@@ -110,7 +102,8 @@ def get_assets(rela=False, dwnl_csv=False):
     ----------
     rela: bool, optional 
         If True, asset relationships will be displayed. Default is False
-        
+    dwnl_csv: bool, optional
+        If true, CSV of assets is downloaded to current directory
     """
     asset_table = pd.DataFrame() #Create empty dataframe
     page_num = 1 #start pagination at 1
@@ -146,21 +139,27 @@ def get_assets(rela=False, dwnl_csv=False):
             return asset_table    
     
 
-def add_assets(csv="data.csv"):
+def add_assets(csv="elements.csv"):
     """Add assets/CIs to freshservice CMDB
     
     Parameters
     ----------
     csv: str, optional
         Specifies the exported Archi file that contains assets/CIs that should be uploaded. 
-        Default value is "data.csv"
-
+        Default value is "elements.csv"
     """
     csv_data = pd.read_csv(csv)
     upload_data = pd.DataFrame(columns=["Name","Type","GUID","Documentation"])
-    data_dict = {"ApplicationComponent":10000207420,
-                 "ApplicationInterface":10000282585,
-                 "Requirement":10000282494}
+    data_dict = {"ApplicationComponent":10001075119,
+                 "ApplicationInterface":10001075120,
+                 "ApplicationService":10001075121,
+                 "ApplicationProcess":10001075122,
+                 "Artifact":10001075124,
+                 "Node":10001075125,
+                 "TechnologyInterface":10001075126,
+                 "TechnologyProcess":10001075127,
+                 "TechnologyService":10001075128
+                 }
     names = [item for item in csv_data.Name]
     types = [data_dict[item] for item in csv_data.Type]
     guids = [item for item in csv_data.ID]
@@ -169,11 +168,16 @@ def add_assets(csv="data.csv"):
     upload_data['Name'].str.replace(r"\(.*\)","")
     upload_data.Type = types
     upload_data.GUID = guids
-    upload_data.Documentation= documentation
+    upload_data.Documentation = documentation
+    #current_assets = get_assets()
     for index, row in upload_data.iterrows():
-        new_label = 'guid_'+str(row.Type)
+        #if current_assets[current_assets["asset_tag"].str.match(row["GUID"])]:
+            #print("yay!")
+        #else:
+            #print("boo!")
         d = {'cmdb_config_item':{'name': re.sub(r'\([^)]*\)', '', str(row.Name))
-,'ci_type_id': str(row.Type),'description':str(row.Documentation), "level_field_attributes":{new_label:row.GUID}}}
+,'ci_type_id': str(row.Type),'description':str(row.Documentation), 'asset_tag':str(row.GUID)}}
+        #need to have GUID as an asset tag because otherwise I can't search by it later
         data = json.dumps(d)
         headers = {'Content-Type': 'application/json'}
         response = requests.post(f"https://{fresh.domain}.freshservice.com/cmdb/items.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
@@ -181,7 +185,7 @@ def add_assets(csv="data.csv"):
         print(response.content)
 
 
-def add_rela(rela_data="relationships.csv",asset_data="data.csv"):
+def add_rela(rela_data="relations.csv",asset_data="elements.csv"):
     """Add relationships to assets in freshservice CMDB. Assets must exist in the CMDB
     for a relationship to be created. 
     
@@ -189,31 +193,37 @@ def add_rela(rela_data="relationships.csv",asset_data="data.csv"):
     ----------
     rela_data: str, optional 
         Specifies the exported Archi file that contains the relationships to be created.
-        Default value is "relationships.csv"
-    item_data: str, optional
+        Default value is "relations.csv"
+    asset_data: str, optional
         Specifies the exported Archi file that contains assets/CIs that were uploaded to freshservice 
-        Default value is "data.csv"
+        Default value is "elements.csv"
    """     
     rela_data = pd.read_csv(rela_data)
     asset_data = pd.read_csv(asset_data)
-    rela_dict = {"CompositionRelationship": "10000085526",
-                 "RealizationRelationship": "10000126146",
-                 "AccessRelationship": "10000126147",
-                 "AssignmentRelationship": "10000138549",
-                 'FlowRelationship': "10000138550",
-                 'TriggeringRelationship': "10000126148",
-                 'AssociationRelationship': "10000126149",
-                 'ServingRelationship': "10000126173"}
-    asset_dict = {"ApplicationComponent": 10000207420,
-                  "ApplicationInterface": 10000282585,
-                  "Requirement": 10000282494}
+    rela_dict = {"CompositionRelationship": "10000527161",
+                 "RealizationRelationship": "10000527162",
+                 "AccessRelationship": "10000527160",
+                 "AssignmentRelationship": "10000527163",
+                 'FlowRelationship': "10000527164",
+                 'TriggeringRelationship': "10000527166",
+                 'AssociationRelationship': "10000527165",
+                 'ServingRelationship': "10000527167"}
+    asset_dict = {"ApplicationComponent":10001075119,
+                 "ApplicationInterface":10001075120,
+                 "ApplicationService":10001075121,
+                 "ApplicationProcess":10001075122,
+                 "Artifact":10001075124,
+                 "Node":10001075125,
+                 "TechnologyInterface":10001075126,
+                 "TechnologyProcess":10001075127,
+                 "TechnologyService":10001075128
+                 }
     
     new_data = pd.DataFrame(columns=["Name","Type","GUID"])
     new_data.Name = [re.sub(r'\([^)]*\)', '', str(item)) for item in asset_data.Name]
     new_data.Type = [asset_dict[item] for item in asset_data.Type]
     guids = [item for item in asset_data.ID]
     new_data.GUID = guids
-    
     babysourcedata = rela_data.loc[rela_data["Source"].isin(guids) & rela_data["Target"].isin(guids)]
     
     final_source_guid = [row.Source for index, row in babysourcedata.iterrows()]
@@ -223,6 +233,7 @@ def add_rela(rela_data="relationships.csv",asset_data="data.csv"):
     final_rela_type_id = [rela_dict[row.Type] for index, row in babysourcedata.iterrows()]
 
     asset_table = get_assets()
+    
                
     asset_table_names = {row["name"]:row["display_id"] for index, row in asset_table.iterrows()}
   
