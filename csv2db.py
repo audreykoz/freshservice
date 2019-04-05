@@ -308,11 +308,3 @@ def search_assets(field_param,query_param):
     search = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items/list.json?field="+field_param+"&q="+query_param, headers=headers,auth=(fresh.user,fresh.password))
     get_calls()
     return json.loads(search.content)
-    
-    
-    
-   
-    
-    
-    
-    
