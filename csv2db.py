@@ -170,7 +170,12 @@ def add_update_assets(csv="elements.csv"):
     upload_data.GUID = guids
     upload_data.Documentation = documentation
     current_assets = get_assets()
-    #print(current_assets.columns.values)
+    #check any assets in the model have been deleted and add them to the database
+    for index, row in current_assets.iterrows():
+        if row["asset_tag"] in list(upload_data['GUID']): 
+            pass
+        else: 
+            delete_asset(row["display_id"])        
     for index, row in upload_data.iterrows():
         d = {'cmdb_config_item':{'name': re.sub(r'\([^)]*\)', '', str(row.Name))
         ,'ci_type_id': str(row.Type),'description':str(row.Documentation), 'asset_tag':str(row.GUID)}}
@@ -178,7 +183,7 @@ def add_update_assets(csv="elements.csv"):
         data = json.dumps(d)
         headers = {'Content-Type': 'application/json'}
         if current_assets['asset_tag'].str.contains(row["GUID"]).any():
-            if row["Documentation"].strip() == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['description'].values[0] and row["Type"] == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['ci_type_id'].values[0] and re.sub(r'\([^)]*\)', '', str(row.Name)).strip() == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['name'].values[0]:
+            if str(row["Documentation"]).strip() == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['description'].values[0] and row["Type"] == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['ci_type_id'].values[0] and re.sub(r'\([^)]*\)', '', str(row.Name)).strip() == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['name'].values[0]:
                 pass
             else:
                 item_id = current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['display_id'].values[0]
@@ -188,7 +193,6 @@ def add_update_assets(csv="elements.csv"):
         else:        
             response = requests.post(f"https://{fresh.domain}.freshservice.com/cmdb/items.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
             print(response.content)
-
 
 def add_rela(rela_data="relations.csv",asset_data="elements.csv"):
     """Add relationships to assets in freshservice CMDB. Assets must exist in the CMDB
