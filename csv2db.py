@@ -140,7 +140,8 @@ def get_assets(rela=False, dwnl_csv=False):
     
 
 def add_update_assets(csv="elements.csv"):
-    """Add assets/CIs to freshservice CMDB
+    """Adds or updates assets/CIs in freshservice CMDB. Assets not presents in the upload 
+    file, but present in the CMDB will be deleted from the CMDB. 
     
     Parameters
     ----------
@@ -170,7 +171,7 @@ def add_update_assets(csv="elements.csv"):
     upload_data.GUID = guids
     upload_data.Documentation = documentation
     current_assets = get_assets()
-    #check any assets in the model have been deleted and add them to the database
+    #check any assets in the model have been deleted and delete them from the database
     for index, row in current_assets.iterrows():
         if row["asset_tag"] in list(upload_data['GUID']): 
             pass
