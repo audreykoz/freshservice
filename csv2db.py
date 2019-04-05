@@ -139,7 +139,7 @@ def get_assets(rela=False, dwnl_csv=False):
             return asset_table    
     
 
-def add_assets(csv="elements.csv"):
+def add_update_assets(csv="elements.csv"):
     """Add assets/CIs to freshservice CMDB
     
     Parameters
@@ -169,20 +169,25 @@ def add_assets(csv="elements.csv"):
     upload_data.Type = types
     upload_data.GUID = guids
     upload_data.Documentation = documentation
-    #current_assets = get_assets()
+    current_assets = get_assets()
+    #print(current_assets.columns.values)
     for index, row in upload_data.iterrows():
-        #if current_assets[current_assets["asset_tag"].str.match(row["GUID"])]:
-            #print("yay!")
-        #else:
-            #print("boo!")
         d = {'cmdb_config_item':{'name': re.sub(r'\([^)]*\)', '', str(row.Name))
-,'ci_type_id': str(row.Type),'description':str(row.Documentation), 'asset_tag':str(row.GUID)}}
+        ,'ci_type_id': str(row.Type),'description':str(row.Documentation), 'asset_tag':str(row.GUID)}}
         #need to have GUID as an asset tag because otherwise I can't search by it later
         data = json.dumps(d)
         headers = {'Content-Type': 'application/json'}
-        response = requests.post(f"https://{fresh.domain}.freshservice.com/cmdb/items.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
-        get_calls()
-        print(response.content)
+        if current_assets['asset_tag'].str.contains(row["GUID"]).any():
+            if row["Documentation"].strip() == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['description'].values[0] and row["Type"] == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['ci_type_id'].values[0] and re.sub(r'\([^)]*\)', '', str(row.Name)).strip() == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['name'].values[0]:
+                pass
+            else:
+                item_id = current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['display_id'].values[0]
+                response = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/{item_id}.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
+                print(response.content)
+                #update data documentation w/ put method through api
+        else:        
+            response = requests.post(f"https://{fresh.domain}.freshservice.com/cmdb/items.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
+            print(response.content)
 
 
 def add_rela(rela_data="relations.csv",asset_data="elements.csv"):
