@@ -4,6 +4,7 @@ import re
 import json 
 import requests 
 import freshlogin as fresh 
+import difflib
 
 
 def get_calls():
@@ -23,51 +24,16 @@ def get_tickets():
     get_calls()
     return json.loads(tickets.content)
 
-
-def get_changes(): 
+def get_itil(itil_item='changes'): 
     """Returns all changes from freshservice 
-        
     """
-    headers={'Content-Type': 'application/json'}
-    changes = requests.get(f"https://{fresh.domain}.freshservice.com/itil/changes.json", headers=headers,auth=(fresh.user,fresh.password))
-    get_calls()
-    return json.loads(changes.content)
-
-
-def get_releases(): 
-    """Returns all releases from freshservice
-    """
-    headers={'Content-Type': 'application/json'}
-    releases = requests.get(f"https://{fresh.domain}.freshservice.com/itil/releases.json", headers=headers,auth=(fresh.user,fresh.password))
-    get_calls()
-    return json.loads(releases.content)
-
-
-def get_problems():
-    """Returns all problems from freshservice
-    """
-    headers={'Content-Type': 'application/json'}
-    problems = requests.get(f"https://{fresh.domain}.freshservice.com/itil/problems.json", headers=headers,auth=(fresh.user,fresh.password))
-    get_calls()
-    return json.loads(problems.content)
-
-
-def get_tasks():
-    """Returns all agent tasks from freshservice
-    """
-    headers={'Content-Type': 'application/json'}
-    tasks = requests.get(f"https://{fresh.domain}.freshservice.com/itil/it_tasks.json", headers=headers,auth=(fresh.user,fresh.password))
-    get_calls()
-    return json.loads(tasks.content)
-
-
-def get_users():
-    """Returns all users from freshservice
-    """
-    headers = {'Content-Type': 'application/json'}
-    users = requests.get(f"https://{fresh.domain}.freshservice.com/itil/requesters.json", headers=headers,auth=(fresh.user,fresh.password))
-    get_calls()
-    return json.loads(users.content)
+    if itil_item not in ["changes", "releases","problems","it_tasks", "requesters"]: 
+        return "This is not a valid argument. Please try 'changes', 'releases','problems','it_tasks', or 'requesters'."
+    else:
+        headers={'Content-Type': 'application/json'}
+        itil_object = requests.get(f"https://{fresh.domain}.freshservice.com/itil/{itil_item}.json", headers=headers,auth=(fresh.user,fresh.password))
+        get_calls()
+        return json.loads(itil_object.content)
 
 
 def get_agents():
@@ -103,7 +69,7 @@ def get_assets(rela=False, dwnl_csv=False):
     rela: bool, optional 
         If True, asset relationships will be displayed. Default is False
     dwnl_csv: bool, optional
-        If true, CSV of assets is downloaded to current directory
+        If true, CSV of assets is downloaded to current directory. Created file name is "freshservice_export.csv". 
     """
     asset_table = pd.DataFrame() #Create empty dataframe
     page_num = 1 #start pagination at 1
@@ -127,13 +93,13 @@ def get_assets(rela=False, dwnl_csv=False):
             asset_table.loc[index,"relationship_data"] = relationship_data #append relationship onto our created row
                                                                            # at the index of the item it belongs to
         if dwnl_csv: #if user wants csv of data, download it and return table
-            asset_table.to_csv("freshservice_export.csv")
+            asset_table.to_csv("freshservice_export.csv",  index=False)
             return asset_table
         else:    
             return asset_table    
     else: #if you don't want relationship data, just download csv and display data
         if dwnl_csv: 
-            asset_table.to_csv("freshservice_export.csv")
+            asset_table.to_csv("freshservice_export.csv",  index=False)
             return asset_table
         else:    
             return asset_table    
@@ -172,28 +138,39 @@ def add_update_assets(csv="elements.csv"):
     upload_data.Documentation = documentation
     current_assets = get_assets()
     #check if any assets in the model have been deleted and delete them from the database
-    for index, row in current_assets.iterrows():
-        if row["asset_tag"] in list(upload_data['GUID']): 
-            pass
-        else: 
-            delete_asset(row["display_id"])        
-    for index, row in upload_data.iterrows():
-        d = {'cmdb_config_item':{'name': re.sub(r'\([^)]*\)', '', str(row.Name))
-        ,'ci_type_id': str(row.Type),'description':str(row.Documentation), 'asset_tag':str(row.GUID)}}
-        #need to have GUID as an asset tag because otherwise I can't search by it later
-        data = json.dumps(d)
-        headers = {'Content-Type': 'application/json'}
-        if current_assets['asset_tag'].str.contains(row["GUID"]).any():
-            if str(row["Documentation"]).strip() == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['description'].values[0] and row["Type"] == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['ci_type_id'].values[0] and re.sub(r'\([^)]*\)', '', str(row.Name)).strip() == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['name'].values[0]:
+    if current_assets.empty == False: 
+        for index, row in current_assets.iterrows():
+            if row["asset_tag"] in list(upload_data['GUID']): 
                 pass
-            else:
-                item_id = current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['display_id'].values[0]
-                response = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/{item_id}.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
+            else: 
+                delete_asset(row["display_id"])        
+        for index, row in upload_data.iterrows():
+            d = {'cmdb_config_item':{'name': re.sub(r'\([^)]*\)', '', str(row.Name))
+            ,'ci_type_id': str(row.Type),'description':str(row.Documentation), 'asset_tag':str(row.GUID)}}
+            #need to have GUID as an asset tag because otherwise I can't search by it later
+            data = json.dumps(d)
+            headers = {'Content-Type': 'application/json'}
+            if current_assets['asset_tag'].str.contains(row["GUID"]).any():
+                if str(row["Documentation"]).strip() == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['description'].values[0] and row["Type"] == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['ci_type_id'].values[0] and re.sub(r'\([^)]*\)', '', str(row.Name)).strip() == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['name'].values[0]:
+                    pass
+                else:
+                    item_id = current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['display_id'].values[0]
+                    response = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/{item_id}.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
+                    print(response.content)
+                    #update data documentation w/ put method through api
+            else:        
+                response = requests.post(f"https://{fresh.domain}.freshservice.com/cmdb/items.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
                 print(response.content)
-                #update data documentation w/ put method through api
-        else:        
+    else:
+        for index, row in upload_data.iterrows():
+            d = {'cmdb_config_item':{'name': re.sub(r'\([^)]*\)', '', str(row.Name))
+            ,'ci_type_id': str(row.Type),'description':str(row.Documentation), 'asset_tag':str(row.GUID)}}
+            #need to have GUID as an asset tag because otherwise I can't search by it later
+            data = json.dumps(d)
+            headers = {'Content-Type': 'application/json'}
             response = requests.post(f"https://{fresh.domain}.freshservice.com/cmdb/items.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
             print(response.content)
+        
 
 def add_rela(rela_data="relations.csv",asset_data="elements.csv"):
     """Add relationships to assets in freshservice CMDB. Assets must exist in the CMDB
@@ -218,6 +195,14 @@ def add_rela(rela_data="relations.csv",asset_data="elements.csv"):
                  'TriggeringRelationship': "10000527166",
                  'AssociationRelationship': "10000527165",
                  'ServingRelationship': "10000527167"}
+    #for item in range(len(get_rela_types())):
+            #number = get_rela_types()[item]["id"]
+            #name = get_rela_types()[item]["forward_relationship"]
+            #match = difflib.get_close_matches(name+"relationship",rela_data["Type"].unique(), n = 1)
+            #if match == []:
+                #pass
+            #else: 
+                #rela_dict[match[0]]  =  number
     asset_dict = {"ApplicationComponent":10001075119,
                  "ApplicationInterface":10001075120,
                  "ApplicationService":10001075121,
