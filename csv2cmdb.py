@@ -6,7 +6,26 @@ import requests
 import freshlogin as fresh 
 import difflib
 
+asset_dict = {"ApplicationComponent":10001075119,
+                 "ApplicationInterface":10001075120,
+                 "ApplicationService":10001075121,
+                 "ApplicationProcess":10001075122,
+                 "Artifact":10001075124,
+                 "Node":10001075125,
+                 "TechnologyInterface":10001075126,
+                 "TechnologyProcess":10001075127,
+                 "TechnologyService":10001075128
+                 }
 
+rela_dict = {"CompositionRelationship": "10000527161",
+             "RealizationRelationship": "10000527162",
+             "AccessRelationship": "10000527160",
+             "AssignmentRelationship": "10000527163",
+             'FlowRelationship': "10000527164",
+             'TriggeringRelationship': "10000527166",
+             'AssociationRelationship': "10000527165",
+             'ServingRelationship': "10000527167"}
+    
 def get_calls():
     """Returns number of API calls made in Python session
     """
@@ -28,7 +47,7 @@ def get_itil(itil_item='changes'):
     """Returns all changes from freshservice 
     """
     if itil_item not in ["changes", "releases","problems","it_tasks", "requesters"]: 
-        return "This is not a valid argument. Please try 'changes', 'releases','problems','it_tasks', or 'requesters'."
+        raise ValueError('itil_item must be equal to "changes", "releases","problems","it_tasks", or "requesters" ')
     else:
         headers={'Content-Type': 'application/json'}
         itil_object = requests.get(f"https://{fresh.domain}.freshservice.com/itil/{itil_item}.json", headers=headers,auth=(fresh.user,fresh.password))
@@ -71,33 +90,31 @@ def get_assets(rela=False, dwnl_csv=False):
     dwnl_csv: bool, optional
         If true, CSV of assets is downloaded to current directory. Created file name is "freshservice_export.csv". 
     """
-    asset_table = pd.DataFrame() #Create empty dataframe
-    page_num = 1 #start pagination at 1
-    pages_left = True #start with more than 1 page of data as default
-    while pages_left: #while we have pages left
-        name = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items.json?page="+str(page_num), auth = (fresh.user, fresh.password)) #get assets
-        get_calls() #add 1 to call counter
-        content = json.loads(name.content) #load asset content as json data
+    asset_table = pd.DataFrame()
+    page_num = 1
+    pages_left = True
+    while pages_left:
+        name = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items.json?page="+str(page_num), auth = (fresh.user, fresh.password))
+        get_calls()
+        content = json.loads(name.content)
         page_num += 1 
         asset_data = pd.DataFrame(content)
-        asset_table = asset_table.append(asset_data,ignore_index=True) #append asset content onto created pandas dataframe
-        if len(content) == 0: #if there's no content in this page, stop loop
+        asset_table = asset_table.append(asset_data,ignore_index=True)
+        if len(content) == 0:
             pages_left = False
-    if rela: #if asking for relationship data as well
-        asset_table["relationship_data"] = numpy.nan #add extra row onto pandas dataframe
-        for index,row in asset_table.iterrows(): #for each thing in asset table, check if there's
-                                                 # relationship data connected to it
+    if rela:
+        asset_table["relationship_data"] = numpy.nan
+        for index,row in asset_table.iterrows():
             r = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items/"+str(row["display_id"])+"/relationships.json", auth = (fresh.user, fresh.password))
             get_calls()
             relationship_data = json.loads(r.content)
-            asset_table.loc[index,"relationship_data"] = relationship_data #append relationship onto our created row
-                                                                           # at the index of the item it belongs to
-        if dwnl_csv: #if user wants csv of data, download it and return table
+            asset_table.loc[index,"relationship_data"] = relationship_data
+        if dwnl_csv:
             asset_table.to_csv("freshservice_export.csv",  index=False)
             return asset_table
         else:    
             return asset_table    
-    else: #if you don't want relationship data, just download csv and display data
+    else:
         if dwnl_csv: 
             asset_table.to_csv("freshservice_export.csv",  index=False)
             return asset_table
@@ -117,18 +134,9 @@ def add_update_assets(csv="elements.csv"):
     """
     csv_data = pd.read_csv(csv)
     upload_data = pd.DataFrame(columns=["Name","Type","GUID","Documentation"])
-    data_dict = {"ApplicationComponent":10001075119,
-                 "ApplicationInterface":10001075120,
-                 "ApplicationService":10001075121,
-                 "ApplicationProcess":10001075122,
-                 "Artifact":10001075124,
-                 "Node":10001075125,
-                 "TechnologyInterface":10001075126,
-                 "TechnologyProcess":10001075127,
-                 "TechnologyService":10001075128
-                 }
+  
     names = [item for item in csv_data.Name]
-    types = [data_dict[item] for item in csv_data.Type]
+    types = [asset_dict[item] for item in csv_data.Type]
     guids = [item for item in csv_data.ID]
     documentation = [item for item in csv_data.Documentation]
     upload_data.Name = names
@@ -137,7 +145,6 @@ def add_update_assets(csv="elements.csv"):
     upload_data.GUID = guids
     upload_data.Documentation = documentation
     current_assets = get_assets()
-    #check if any assets in the model have been deleted and delete them from the database
     if current_assets.empty == False: 
         for index, row in current_assets.iterrows():
             if row["asset_tag"] in list(upload_data['GUID']): 
@@ -147,7 +154,6 @@ def add_update_assets(csv="elements.csv"):
         for index, row in upload_data.iterrows():
             d = {'cmdb_config_item':{'name': re.sub(r'\([^)]*\)', '', str(row.Name))
             ,'ci_type_id': str(row.Type),'description':str(row.Documentation), 'asset_tag':str(row.GUID)}}
-            #need to have GUID as an asset tag because otherwise I can't search by it later
             data = json.dumps(d)
             headers = {'Content-Type': 'application/json'}
             if current_assets['asset_tag'].str.contains(row["GUID"]).any():
@@ -157,7 +163,6 @@ def add_update_assets(csv="elements.csv"):
                     item_id = current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['display_id'].values[0]
                     response = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/{item_id}.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
                     print(response.content)
-                    #update data documentation w/ put method through api
             else:        
                 response = requests.post(f"https://{fresh.domain}.freshservice.com/cmdb/items.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
                 print(response.content)
@@ -165,7 +170,6 @@ def add_update_assets(csv="elements.csv"):
         for index, row in upload_data.iterrows():
             d = {'cmdb_config_item':{'name': re.sub(r'\([^)]*\)', '', str(row.Name))
             ,'ci_type_id': str(row.Type),'description':str(row.Documentation), 'asset_tag':str(row.GUID)}}
-            #need to have GUID as an asset tag because otherwise I can't search by it later
             data = json.dumps(d)
             headers = {'Content-Type': 'application/json'}
             response = requests.post(f"https://{fresh.domain}.freshservice.com/cmdb/items.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
@@ -187,33 +191,7 @@ def add_rela(rela_data="relations.csv",asset_data="elements.csv"):
    """     
     rela_data = pd.read_csv(rela_data)
     asset_data = pd.read_csv(asset_data)
-    rela_dict = {"CompositionRelationship": "10000527161",
-                 "RealizationRelationship": "10000527162",
-                 "AccessRelationship": "10000527160",
-                 "AssignmentRelationship": "10000527163",
-                 'FlowRelationship': "10000527164",
-                 'TriggeringRelationship': "10000527166",
-                 'AssociationRelationship': "10000527165",
-                 'ServingRelationship': "10000527167"}
-    #for item in range(len(get_rela_types())):
-            #number = get_rela_types()[item]["id"]
-            #name = get_rela_types()[item]["forward_relationship"]
-            #match = difflib.get_close_matches(name+"relationship",rela_data["Type"].unique(), n = 1)
-            #if match == []:
-                #pass
-            #else: 
-                #rela_dict[match[0]]  =  number
-    asset_dict = {"ApplicationComponent":10001075119,
-                 "ApplicationInterface":10001075120,
-                 "ApplicationService":10001075121,
-                 "ApplicationProcess":10001075122,
-                 "Artifact":10001075124,
-                 "Node":10001075125,
-                 "TechnologyInterface":10001075126,
-                 "TechnologyProcess":10001075127,
-                 "TechnologyService":10001075128
-                 }
-    
+
     new_data = pd.DataFrame(columns=["Name","Type","GUID"])
     new_data.Name = [re.sub(r'\([^)]*\)', '', str(item)) for item in asset_data.Name]
     new_data.Type = [asset_dict[item] for item in asset_data.Type]
