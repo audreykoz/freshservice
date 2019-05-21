@@ -3,7 +3,8 @@ import numpy
 import re
 import json 
 import requests 
-import freshlogin as fresh 
+import freshlogin as fresh
+import sqlite3
 import difflib
 
 asset_dict = {"ApplicationComponent":10001075119,
@@ -14,7 +15,8 @@ asset_dict = {"ApplicationComponent":10001075119,
                  "Node":10001075125,
                  "TechnologyInterface":10001075126,
                  "TechnologyProcess":10001075127,
-                 "TechnologyService":10001075128
+                 "TechnologyService":10001075128,
+                 "DataObject":10001075342
                  }
 
 rela_dict = {"CompositionRelationship": "10000527161",
@@ -44,7 +46,7 @@ def get_tickets():
     return json.loads(tickets.content)
 
 def get_itil(itil_item='changes'): 
-    """Returns all changes from freshservice 
+    """Returns specified item from freshservice. Options are "changes", "releases", "it_tasks","problems", or "requestors".
     """
     if itil_item not in ["changes", "releases","problems","it_tasks", "requesters"]: 
         raise ValueError('itil_item must be equal to "changes", "releases","problems","it_tasks", or "requesters" ')
@@ -94,7 +96,7 @@ def get_assets(rela=False, dwnl_csv=False):
     page_num = 1
     pages_left = True
     while pages_left:
-        name = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items.json?page="+str(page_num), auth = (fresh.user, fresh.password))
+        name = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items.json?page={str(page_num)}", auth = (fresh.user, fresh.password))
         get_calls()
         content = json.loads(name.content)
         page_num += 1 
@@ -105,7 +107,7 @@ def get_assets(rela=False, dwnl_csv=False):
     if rela:
         asset_table["relationship_data"] = numpy.nan
         for index,row in asset_table.iterrows():
-            r = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items/"+str(row["display_id"])+"/relationships.json", auth = (fresh.user, fresh.password))
+            r = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items/{str(row['display_id'])}/relationships.json", auth = (fresh.user, fresh.password))
             get_calls()
             relationship_data = json.loads(r.content)
             asset_table.loc[index,"relationship_data"] = relationship_data
@@ -134,7 +136,9 @@ def add_update_assets(csv="elements.csv"):
     """
     csv_data = pd.read_csv(csv)
     upload_data = pd.DataFrame(columns=["Name","Type","GUID","Documentation"])
-  
+    #cnx = sqlite3.connect('/Users/audreykoziol/Desktop/freshservice/Untitled.sqlite')
+    #csv_data = pd.read_sql_query("SELECT * FROM elements", cnx)
+    #print(csv_data['class'])
     names = [item for item in csv_data.Name]
     types = [asset_dict[item] for item in csv_data.Type]
     guids = [item for item in csv_data.ID]
@@ -217,7 +221,7 @@ def add_rela(rela_data="relations.csv",asset_data="elements.csv"):
         dictionary = {"type":"config_items", "type_id":[asset_table_names[second_item]], "relationship_type_id": third, "relationship_type":"forward_relationship"}
         data2 = json.dumps(dictionary)
         try:
-            response = requests.post(f"https://{fresh.domain}.freshservice.com/cmdb/items/"+str(asset_table_names[item])+'/associate.json', headers=headers, data=data2, auth=(fresh.api_key, fresh.password))
+            response = requests.post(f"https://{fresh.domain}.freshservice.com/cmdb/items/{str(asset_table_names[item])}/associate.json", headers=headers, data=data2, auth=(fresh.api_key, fresh.password))
             get_calls()
             print(response.content)
         except: 
@@ -235,7 +239,7 @@ def delete_asset(display_id):
         the CMDB. 
     """
     headers = {'Content-Type': 'application/json'}
-    testing = requests.delete(f"https://{fresh.domain}.freshservice.com/cmdb/items/"+str(display_id)+".json", headers=headers, auth=(fresh.api_key, fresh.password))
+    testing = requests.delete(f"https://{fresh.domain}.freshservice.com/cmdb/items/{str(display_id)}.json", headers=headers, auth=(fresh.api_key, fresh.password))
     get_calls()
     return json.loads(testing.content)
 
@@ -250,7 +254,7 @@ def restore_asset(display_id):
         the CMDB. 
     """
     headers = {'Content-Type': 'application/json'}
-    restore = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/"+str(display_id)+"/restore.json", headers=headers, auth=(fresh.api_key, fresh.password))
+    restore = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/{str(display_id)}/restore.json", headers=headers, auth=(fresh.api_key, fresh.password))
     get_calls() 
     return json.loads(restore.content)
 
@@ -262,12 +266,12 @@ def search_assets(field_param,query_param):
     ----------
     field_param: str
         Specifies which field should be used to search for an asset. Allowed parameters 
-        are 'name', 'asset_tag', or 'serial_number.
+        are 'name', 'asset_tag', or 'serial_number'.
     query_param: str 
         What you would like to search for based off of the field_param. For example, 
         field_param="name", query_param="andrea". 
     """
     headers={'Content-Type': 'application/json'}
-    search = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items/list.json?field="+field_param+"&q="+query_param, headers=headers,auth=(fresh.user,fresh.password))
+    search = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items/list.json?field={field_param}&q={query_param}", headers=headers,auth=(fresh.api_key,"1234"))
     get_calls()
     return json.loads(search.content)
