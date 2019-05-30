@@ -307,3 +307,76 @@ def add_dns(dns_csv = "Archi_Exports/dns_csv.csv"):
         data = json.dumps(d)  
         response = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/{final_filter.loc[name_index]['display_id']}.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
         print(response.content)
+        
+def clone_artifacts(csv="Archi_Exports/VladArtifacts.csv", era = "Archi_Exports/LSST_eras.csv"):
+    """Adds or updates assets/CIs in freshservice CMDB. Assets not present in the upload 
+    file, but present in the CMDB will be deleted from the CMDB. 
+    
+    Parameters
+    ----------
+    csv: str, optional
+        Specifies the exported Archi file that contains assets/CIs that should be uploaded. 
+        Default value is "elements.csv"
+    """
+    csv_data = pd.read_csv(csv)
+    upload_data = pd.DataFrame(columns=["Name","Type","GUID","Documentation"])
+    era_data = pd.read_csv(era)
+    #cnx = sqlite3.connect('/Users/audreykoziol/Desktop/freshservice/Untitled.sqlite')
+    #csv_data = pd.read_sql_query("SELECT * FROM elements", cnx)
+    #print(csv_data['class'])
+    names = ["*FUTURE* "+item for item in csv_data.Name]
+    types = [asset_dict[item] for item in csv_data.Type]
+    guids = ["f_"+item for item in csv_data.ID]
+    documentation = [item for item in csv_data.Documentation]
+    upload_data.Name = names
+    upload_data['Name'].str.replace(r"\(.*\)","")
+    upload_data.Type = types
+    upload_data.GUID = guids
+    upload_data.Documentation = documentation
+    current_assets = csv2cmdb.get_assets()
+    if current_assets.empty == False: 
+        #for index, row in current_assets.iterrows():
+            #if row["asset_tag"] in list(upload_data['GUID']): 
+                #pass
+            #else: 
+                #delete_asset(row["display_id"])        
+        for index, row in upload_data.iterrows():
+            d = {'cmdb_config_item':{'name': re.sub(r'\([^)]*\)', '', str(row.Name)),
+                                     'ci_type_id': str(row.Type),
+                                     'description':str(row.Documentation), 
+                                     'asset_tag':str(row.GUID),
+                 "level_field_attributes":{
+                     f'bytes_{row.Type}': str(era_data.loc[0]["Fires"]),
+                     f'era_2_storage_{row.Type}': str(era_data.loc[1]["Fires"])
+                 }
+                }
+               }
+            data = json.dumps(d)
+            print(data)
+            headers = {'Content-Type': 'application/json'}
+            if current_assets['asset_tag'].str.contains(row["GUID"]).any():
+                if str(row["Documentation"]).strip() == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['description'].values[0] and row["Type"] == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['ci_type_id'].values[0] and re.sub(r'\([^)]*\)', '', str(row.Name)).strip() == current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['name'].values[0]:
+                    pass
+                else:
+                    item_id = current_assets[current_assets['asset_tag'].str.match(row["GUID"])]['display_id'].values[0]
+                    response = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/{item_id}.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
+                    print(response.content)
+            else:        
+                response = requests.post(f"https://{fresh.domain}.freshservice.com/cmdb/items.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
+                print(response.content)
+    else:
+        for index, row in upload_data.iterrows():
+            d = {'cmdb_config_item':{'name': re.sub(r'\([^)]*\)', '', str(row.Name)),
+                                     'ci_type_id': str(row.Type),
+                                     'description':str(row.Documentation), 
+                                     'asset_tag':str(row.GUID),
+                 "level_field_attributes":{
+                     f'bytes_{row.Type}': str(era_data.loc[0]["Fires"]),
+                     f'era_2_storage_{row.Type}': str(era_data.loc[1]["Fires"])
+                 }
+                }
+               } 
+            data = json.dumps(d)
+            headers = {'Content-Type': 'application/json'}
+            response = requests.post(f"https://{fresh.domain}.freshservice.com/cmdb/items.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
+            print(response.content)        
