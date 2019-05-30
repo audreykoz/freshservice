@@ -307,5 +307,3 @@ def add_dns(dns_csv = "Archi_Exports/dns_csv.csv"):
         data = json.dumps(d)  
         response = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/{final_filter.loc[name_index]['display_id']}.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
         print(response.content)
-
-add_dns()
