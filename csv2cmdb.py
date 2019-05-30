@@ -16,7 +16,8 @@ asset_dict = {"ApplicationComponent":10001075119,
                  "TechnologyInterface":10001075126,
                  "TechnologyProcess":10001075127,
                  "TechnologyService":10001075128,
-                 "DataObject":10001075342
+                 "DataObject":10001075342,  
+                 "Grouping": 10001075579 
                  }
 
 rela_dict = {"CompositionRelationship": "10000527161",
@@ -150,11 +151,11 @@ def add_update_assets(csv="elements.csv"):
     upload_data.Documentation = documentation
     current_assets = get_assets()
     if current_assets.empty == False: 
-        for index, row in current_assets.iterrows():
-            if row["asset_tag"] in list(upload_data['GUID']): 
-                pass
-            else: 
-                delete_asset(row["display_id"])        
+        #for index, row in current_assets.iterrows():
+            #if row["asset_tag"] in list(upload_data['GUID']): 
+                #pass
+            #else: 
+                #delete_asset(row["display_id"])        
         for index, row in upload_data.iterrows():
             d = {'cmdb_config_item':{'name': re.sub(r'\([^)]*\)', '', str(row.Name))
             ,'ci_type_id': str(row.Type),'description':str(row.Documentation), 'asset_tag':str(row.GUID)}}
@@ -275,3 +276,36 @@ def search_assets(field_param,query_param):
     search = requests.get(f"https://{fresh.domain}.freshservice.com/cmdb/items/list.json?field={field_param}&q={query_param}", headers=headers,auth=(fresh.api_key,"1234"))
     get_calls()
     return json.loads(search.content)
+
+def add_dns(dns_csv = "Archi_Exports/dns_csv.csv"):
+    filtered = get_assets().loc[get_assets()["ci_type_id"] == 10001075125]
+    indexes = []
+    for key, value in filtered["levelfield_values"].iteritems(): 
+        if value["connected_to_provisioning_10001075125"] == "Yes": 
+             indexes.append(key)
+        else: 
+             pass
+    imported = pd.read_csv(dns_csv, names = ("Name", "DNS"))
+    final_filter = filtered[filtered.index.isin(indexes)]
+    headers = {'Content-Type': 'application/json'}
+    for index, row in imported.iterrows():
+        name = re.sub(r'\([^)]*\)', '', row["Name"]).strip()
+        name_index = ''
+        for index, row1 in final_filter["name"].iteritems():
+            if name == row1:
+                name_index = int(index)
+            else:
+                pass
+        d = {'cmdb_config_item':{'name': str(final_filter.loc[name_index]["name"]),
+                                 'ci_type_id': str(final_filter.loc[name_index]["ci_type_id"]),
+                                 'description':str(final_filter.loc[name_index]["description"]),
+                                 'asset_tag':str(final_filter.loc[name_index]["asset_tag"]),
+                                 'level_field_attributes':
+                                     {'connected_to_provisioning_10001075125': 'Yes',"dns_names_10001075125":str(row["DNS"])}
+                                }
+            }
+        data = json.dumps(d)  
+        response = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/{final_filter.loc[name_index]['display_id']}.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
+        print(response.content)
+
+add_dns()
