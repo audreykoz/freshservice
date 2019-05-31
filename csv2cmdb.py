@@ -277,35 +277,22 @@ def search_assets(field_param,query_param):
     get_calls()
     return json.loads(search.content)
 
-def add_dns(dns_csv = "Archi_Exports/dns_csv.csv"):
-    filtered = get_assets().loc[get_assets()["ci_type_id"] == 10001075125]
-    indexes = []
-    for key, value in filtered["levelfield_values"].iteritems(): 
-        if value["connected_to_provisioning_10001075125"] == "Yes": 
-             indexes.append(key)
-        else: 
-             pass
-    imported = pd.read_csv(dns_csv, names = ("Name", "DNS"))
-    final_filter = filtered[filtered.index.isin(indexes)]
+def add_dns(dns_csv = "Archi_Exports/dns_csv.csv"): 
+    imported = pd.read_csv(dns_csv, names = ("Name", "DNS"), quotechar='"',skipinitialspace=True)
     headers = {'Content-Type': 'application/json'}
     for index, row in imported.iterrows():
-        name = re.sub(r'\([^)]*\)', '', row["Name"]).strip()
-        name_index = ''
-        for index, row1 in final_filter["name"].iteritems():
-            if name == row1:
-                name_index = int(index)
-            else:
-                pass
-        d = {'cmdb_config_item':{'name': str(final_filter.loc[name_index]["name"]),
-                                 'ci_type_id': str(final_filter.loc[name_index]["ci_type_id"]),
-                                 'description':str(final_filter.loc[name_index]["description"]),
-                                 'asset_tag':str(final_filter.loc[name_index]["asset_tag"]),
+        node_name = re.sub(r'\([^)]*\)', '', row["Name"]).strip()
+        name_match = search_assets("name",node_name)
+        d = {'cmdb_config_item':{'name': name_match["config_items"][0]["name"],
+                                 'ci_type_id': name_match["config_items"][0]['ci_type_id'],
+                                 'description':name_match["config_items"][0]['description'],
+                                 'asset_tag':name_match["config_items"][0]['asset_tag'],
                                  'level_field_attributes':
                                      {'connected_to_provisioning_10001075125': 'Yes',"dns_names_10001075125":str(row["DNS"])}
                                 }
             }
         data = json.dumps(d)  
-        response = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/{final_filter.loc[name_index]['display_id']}.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
+        response = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/{name_match['config_items'][0]['display_id']}.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
         print(response.content)
         
 def clone_artifacts(csv="Archi_Exports/VladArtifacts.csv", era = "Archi_Exports/LSST_eras.csv"):
