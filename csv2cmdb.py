@@ -46,8 +46,13 @@ def get_tickets():
     get_calls()
     return json.loads(tickets.content)
 
-def get_object(item ='changes'): 
-    """Returns specified item from freshservice. Options are "changes", "releases", "it_tasks","problems", or "requestors".
+def get_object(item='changes'): 
+    """Returns specified item from Freshservice. 
+    
+    Parameters: 
+    -----------
+    item: str
+        Specifies what's returned from Freshservice. Options are "changes", "releases", "it_tasks","problems", or "requestors".
     """
     if item not in ["changes", "releases","problems","it_tasks", "requesters"]: 
         raise ValueError(' Requested item must be equal to "changes", "releases","problems","it_tasks", or "requesters" ')
@@ -56,6 +61,21 @@ def get_object(item ='changes'):
         itil_object = requests.get(f"https://{fresh.domain}.freshservice.com/itil/{item}.json", headers=headers,auth=(fresh.user,fresh.password))
         get_calls()
         return json.loads(itil_object.content)
+    
+def get_assoc(display_id, assoc): 
+    """Returns requests or contracts related to an asset. 
+    
+    Parameters: 
+    ----------
+    display_id: str
+        Specify which asset you want to display associated items for.  
+    assoc: str
+        Specify if you want to view contracts or requests associated with an asset. Options are "contracts" or "requests"
+    """
+    headers = {'Content-Type': 'application/json'}
+    data = requests.get(f"https://{fresh.domain}.freshservice.com/api/v2/assets/{display_id}/{assoc}", headers=headers,auth=(fresh.user,fresh.password))
+    get_calls()
+    return json.loads(data.content)
 
 
 def get_agents():
@@ -89,9 +109,9 @@ def get_assets(rela=False, dwnl_csv=False):
     Parameters
     ----------
     rela: bool, optional 
-        If True, asset relationships will be displayed. Default is False
+        If True, asset relationships will be displayed. Default is False. 
     dwnl_csv: bool, optional
-        If true, CSV of assets is downloaded to current directory. Created file name is "freshservice_export.csv". 
+        If True, CSV of assets is downloaded to current directory. Created file name is "freshservice_export.csv". 
     """
     asset_table = pd.DataFrame()
     page_num = 1
@@ -133,7 +153,7 @@ def add_update_assets(csv="elements.csv"):
     ----------
     csv: str, optional
         Specifies the exported Archi file that contains assets/CIs that should be uploaded. 
-        Default value is "elements.csv"
+        Default value is "elements.csv". 
     """
     csv_data = pd.read_csv(csv)
     upload_data = pd.DataFrame(columns=["Name","Type","GUID","Documentation"])
@@ -191,7 +211,7 @@ def add_rela(rela_data="relations.csv",asset_data="elements.csv"):
         Specifies the exported Archi file that contains the relationships to be created.
         Default value is "relations.csv"
     asset_data: str, optional
-        Specifies the exported Archi file that contains assets/CIs that were uploaded to freshservice 
+        Specifies the exported Archi file that contains assets/CIs that were uploaded to Freshservice.  
         Default value is "elements.csv"
    """     
     rela_data = pd.read_csv(rela_data)
@@ -230,7 +250,7 @@ def add_rela(rela_data="relations.csv",asset_data="elements.csv"):
             pass
 
 
-def delete_asset(display_id, permanant = False):
+def delete_asset(display_id, permanant=False):
     """Delete a specified Asset/CI from the freshservice CMDB 
     
     Parameters
@@ -264,7 +284,7 @@ def restore_asset(display_id):
     get_calls() 
     return json.loads(restore.content)
 
-def filter_assets(query = ""):
+def filter_assets(query=""):
     """Similar to the function of search_assets() but provides more search fields. 
     
     Parameters
@@ -303,7 +323,7 @@ def search_assets(field_param,query_param):
     return json.loads(search.content)
 
 
-def add_dns(dns_csv = "Archi_Exports/dns_csv.csv"):
+def add_dns(dns_csv="Archi_Exports/dns_csv.csv"):
     """Add information to the "dns_names" field of an asset
     
     Parameters
@@ -329,7 +349,7 @@ def add_dns(dns_csv = "Archi_Exports/dns_csv.csv"):
         response = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/{name_match['config_items'][0]['display_id']}.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
         print(response.content)
         
-def clone_artifacts(csv="Archi_Exports/VladArtifacts.csv", era = "Archi_Exports/LSST_eras.csv"):
+def clone_artifacts(csv="Archi_Exports/VladArtifacts.csv", era="Archi_Exports/LSST_eras.csv"):
     """Adds or updates assets/CIs in freshservice CMDB. Assets not present in the upload 
     file, but present in the CMDB will be deleted from the CMDB. 
     
