@@ -259,6 +259,26 @@ def restore_asset(display_id):
     get_calls() 
     return json.loads(restore.content)
 
+def filter_assets(query = ""):
+    """Similar to the function of search_assets() but provides more search fields. 
+    
+    Parameters
+    ---------
+    query: str 
+        query must be composed of a query field (options are asset_type_id, department_id, location_id, asset_state, user_id,             agent_id, name, asset_tag, created_at, or updated_at) and a query. Queries must be surrounded by quotes ("%27 can be             used"). Dates are in UTD formatting. An example is "created_at:%272019-05-30%27", which returns all assets created on May         30th, 2019.  
+    """
+    asset_table = pd.DataFrame()
+    page_num = 1
+    pages_left = True
+    while pages_left:
+        name = requests.get(f'https://{fresh.domain}.freshservice.com/api/v2/assets?include=type_fields&query="{query}"&page={page_num}', auth = (fresh.user, fresh.password))
+        content = json.loads(name.content)
+        page_num += 1 
+        asset_data = pd.DataFrame(content["assets"])
+        asset_table = asset_table.append(asset_data,ignore_index=True)
+        if not content["assets"]:
+            pages_left = False
+    return asset_table         
 
 def search_assets(field_param,query_param):
     """Search items in the freshservice CMDB
@@ -277,7 +297,16 @@ def search_assets(field_param,query_param):
     get_calls()
     return json.loads(search.content)
 
-def add_dns(dns_csv = "Archi_Exports/dns_csv.csv"): 
+
+def add_dns(dns_csv = "Archi_Exports/dns_csv.csv"):
+    """Add information to the "dns_names" field of an asset
+    
+    Parameters
+    ----------
+    dns_csv: str
+        Specifies which file contains your nodes and dns names. Format inside CSV must be "node_name", "dns1, dns2, dns3, etc."
+    
+    """
     imported = pd.read_csv(dns_csv, names = ("Name", "DNS"), quotechar='"',skipinitialspace=True)
     headers = {'Content-Type': 'application/json'}
     for index, row in imported.iterrows():
