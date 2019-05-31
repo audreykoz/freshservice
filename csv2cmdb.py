@@ -46,14 +46,14 @@ def get_tickets():
     get_calls()
     return json.loads(tickets.content)
 
-def get_itil(itil_item='changes'): 
+def get_object(item ='changes'): 
     """Returns specified item from freshservice. Options are "changes", "releases", "it_tasks","problems", or "requestors".
     """
-    if itil_item not in ["changes", "releases","problems","it_tasks", "requesters"]: 
-        raise ValueError('itil_item must be equal to "changes", "releases","problems","it_tasks", or "requesters" ')
+    if item not in ["changes", "releases","problems","it_tasks", "requesters"]: 
+        raise ValueError(' Requested item must be equal to "changes", "releases","problems","it_tasks", or "requesters" ')
     else:
         headers={'Content-Type': 'application/json'}
-        itil_object = requests.get(f"https://{fresh.domain}.freshservice.com/itil/{itil_item}.json", headers=headers,auth=(fresh.user,fresh.password))
+        itil_object = requests.get(f"https://{fresh.domain}.freshservice.com/itil/{item}.json", headers=headers,auth=(fresh.user,fresh.password))
         get_calls()
         return json.loads(itil_object.content)
 
