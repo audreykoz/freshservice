@@ -230,7 +230,7 @@ def add_rela(rela_data="relations.csv",asset_data="elements.csv"):
             pass
 
 
-def delete_asset(display_id):
+def delete_asset(display_id, permanant = False):
     """Delete a specified Asset/CI from the freshservice CMDB 
     
     Parameters
@@ -240,9 +240,14 @@ def delete_asset(display_id):
         the CMDB. 
     """
     headers = {'Content-Type': 'application/json'}
-    testing = requests.delete(f"https://{fresh.domain}.freshservice.com/cmdb/items/{str(display_id)}.json", headers=headers, auth=(fresh.api_key, fresh.password))
-    get_calls()
-    return json.loads(testing.content)
+    if not permanant: 
+        testing = requests.delete(f"https://{fresh.domain}.freshservice.com/cmdb/items/{str(display_id)}.json", headers=headers, auth=(fresh.api_key, fresh.password))
+        get_calls()
+        return json.loads(testing.content)
+    else: 
+        testing = requests.put(f"https://{fresh.domain}.freshservice.com/api/v2/assets/{str(display_id)}/delete_forever", headers=headers, auth=(fresh.api_key, fresh.password))
+        get_calls()
+        return f"Asset {display_id} deleted permanently"
 
 
 def restore_asset(display_id):
