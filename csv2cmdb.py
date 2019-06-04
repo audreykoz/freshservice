@@ -17,18 +17,38 @@ asset_dict = {"ApplicationComponent":10001075119,
                  "TechnologyProcess":10001075127,
                  "TechnologyService":10001075128,
                  "DataObject":10001075342,  
-                 "Grouping": 10001075579 
-                 }
+                 "Grouping": 10001075579}
 
-rela_dict = {"CompositionRelationship": "10000527161",
-             "RealizationRelationship": "10000527162",
-             "AccessRelationship": "10000527160",
-             "AssignmentRelationship": "10000527163",
-             'FlowRelationship': "10000527164",
-             'TriggeringRelationship': "10000527166",
-             'AssociationRelationship': "10000527165",
-             'ServingRelationship': "10000527167"}
-    
+rela_dict = {'CompositionRelationship': '10000527161',
+             'RealizationRelationship': '10000527162',
+             'AccessRelationship': '10000527160',
+             'AssignmentRelationship': '10000527163',
+             'FlowRelationship': '10000527164',
+             'TriggeringRelationship': '10000527166',
+             'AssociationRelationship': '10000527165',
+             'ServingRelationship': '10000527167'}
+
+def get_rela_ids():
+    """Return a dictionary consisting of Archi relationship types paired with their Freshservice relationship IDs. 
+    """
+    match_dict = ["CompositionRelationship",
+                 "RealizationRelationship",
+                 "AccessRelationship",
+                 "AssignmentRelationship",
+                 'FlowRelationship',
+                 'TriggeringRelationship',
+                 'AssociationRelationship',
+                 'ServingRelationship']
+    rela_dict = {}
+    for item in imp.get_rela_types(): 
+        early_creation = datetime.datetime(2018, 8, 2, 0, 0, 0)
+        if datetime.datetime.strptime(item["created_at"], "%Y-%m-%dT%H:%M:%S-04:00") > early_creation: 
+            rela = difflib.get_close_matches(item["forward_relationship"].replace(" ", "").replace("to", "").replace("with","")+"Relationship", match_dict)[0]
+            rela_dict[rela]=str(item["id"])
+        else: 
+            pass
+    return rela_dict    
+
 def get_calls():
     """Returns number of API calls made in Python session
     """
@@ -232,7 +252,6 @@ def add_rela(rela_data="relations.csv",asset_data="elements.csv"):
 
     asset_table = get_assets()
     
-               
     asset_table_names = {row["name"]:row["display_id"] for index, row in asset_table.iterrows()}
   
     for item,second_item, third in zip(final_source_name, final_target_name,final_rela_type_id):
@@ -267,7 +286,7 @@ def delete_asset(display_id, permanant=False):
     else: 
         testing = requests.put(f"https://{fresh.domain}.freshservice.com/api/v2/assets/{str(display_id)}/delete_forever", headers=headers, auth=(fresh.api_key, fresh.password))
         get_calls()
-        return f"Asset {display_id} deleted permanently"
+        return f"Asset #{display_id} deleted permanently"
 
 
 def restore_asset(display_id):
@@ -342,9 +361,7 @@ def add_dns(dns_csv="Archi_Exports/dns_csv.csv"):
                                  'description':name_match["config_items"][0]['description'],
                                  'asset_tag':name_match["config_items"][0]['asset_tag'],
                                  'level_field_attributes':
-                                     {'connected_to_provisioning_10001075125': 'Yes',"dns_names_10001075125":str(row["DNS"])}
-                                }
-            }
+                                     {'connected_to_provisioning_10001075125': 'Yes',"dns_names_10001075125":str(row["DNS"])}}}
         data = json.dumps(d)  
         response = requests.put(f"https://{fresh.domain}.freshservice.com/cmdb/items/{name_match['config_items'][0]['display_id']}.json", headers=headers, data=data, auth=(fresh.user, fresh.password))
         print(response.content)
