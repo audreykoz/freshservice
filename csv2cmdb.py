@@ -1,5 +1,5 @@
 """
-These functions provide services that integrate with the Freshservice API.
+These functions read/write data generated from Archi into Freshservice's CMDB via API.
 """
 
 import re
@@ -7,23 +7,28 @@ import json
 import difflib
 import datetime as dt
 import requests
-#import sqlite3
 import numpy
 import pandas as pd
 import freshlogin as fresh
 
 
-ASSET_DICT = {"ApplicationComponent": 10001075119,
-              "ApplicationInterface": 10001075120,
-              "ApplicationService": 10001075121,
-              "ApplicationProcess": 10001075122,
-              "Artifact": 10001075124,
-              "Node": 10001075125,
-              "TechnologyInterface": 10001075126,
-              "TechnologyProcess": 10001075127,
-              "TechnologyService": 10001075128,
-              "DataObject": 10001075342,
-              "Grouping": 10001075579}
+ASSET_DICT = {"ApplicationComponent": "10001075119",
+              "ApplicationInterface": "10001075120",
+              "ApplicationService": "10001075121",
+              "ApplicationProcess": "10001075122",
+              "Artifact": "10001075124",
+              "Node": "10001075125",
+              "TechnologyInterface": "10001075126",
+              "TechnologyProcess": "10001075127",
+              "TechnologyService": "10001075128",
+              "DataObject": "10001075342",
+              "Grouping": "10001075579",
+              "Contract": "10001075891",
+              "BusinessService": "10000946884",
+              "BusinessProcess": "10001075893",
+              "Representation": "10001075894",
+              "BusinessEvent": "10001075895"
+             }
 
 RELA_DICT = {'CompositionRelationship': '10000527161',
              'RealizationRelationship': '10000527162',
@@ -215,7 +220,6 @@ def add_update_assets(csv="elements.csv"):
     upload_data.GUID = guids
     upload_data.Documentation = documentation
     current_assets = get_assets()
-    print(current_assets)
     if current_assets is not None:
         #for index, row in current_assets.iterrows():
             #if row["asset_tag"] in list(upload_data['GUID']):
