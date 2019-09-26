@@ -196,7 +196,7 @@ def get_assets(rela=False, dwnl_csv=False):
     return asset_table      
 
 
-def add_update_assets(csv="elements.csv"):
+def add_update_assets(file="", filetype = ""):
     """Adds or updates assets/CIs in freshservice CMDB. Assets not present in the upload
     file, but present in the CMDB will be deleted from the CMDB.
     Parameters
@@ -205,7 +205,10 @@ def add_update_assets(csv="elements.csv"):
         Specifies the exported Archi file that contains assets/CIs that should be uploaded.
         Default value is "elements.csv".
     """
-    csv_data = pd.read_csv(csv)
+    if filetype == "csv": 
+        csv_data = pd.read_csv(file)
+    if filetype == "excel": 
+        csv_data = pd.read_excel(file, usecols = "B:E")
     upload_data = pd.DataFrame(columns=["Name", "Type", "GUID", "Documentation"])
     # cnx = sqlite3.connect('/Users/audreykoziol/Desktop/freshservice/Untitled.sqlite')
     # csv_data = pd.read_sql_query("SELECT * FROM elements", cnx)
