@@ -323,7 +323,7 @@ def add_rela(rela_data="relations.csv", asset_data="elements.csv"):
             print(f"There was an error uploading a relationship with a source of {item} and a target of {second_item}.")
 
 
-def delete_asset(display_id, permanant=False):
+def delete_asset(display_id, permanant=False, asset_type = "asset"):
     """Delete a specified Asset/CI from the freshservice CMDB 
     Parameters
     ----------
@@ -332,8 +332,12 @@ def delete_asset(display_id, permanant=False):
         the CMDB.
     """
     headers = {'Content-Type': 'application/json'}
+    if asset_type == "asset": 
+        ending = ".json"
+    if asset_type == "relationship": 
+        ending = "/detach_relationship.json"
     if not permanant:
-        testing = requests.delete(f"https://{fresh.domain}/cmdb/items/{str(display_id)}.json",
+        testing = requests.delete(f"https://{fresh.domain}/cmdb/items/{str(display_id)}{ending}",
                                   headers=headers, auth=(fresh.api_key, fresh.password)
                                   )
         get_calls()
