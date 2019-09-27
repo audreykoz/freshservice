@@ -5,8 +5,9 @@ import re
 
 def ingest(args):
     """Upload the elements and connections to Freshservice"""
-    c.add_update_assets(args.elemfile, re.match(args.elemfile, '[^.]*$'))
-    c.add_rela(args.relfile, args.elemfile)
+    filetype = re.findall('[^.]*$', args.elemfile)[0]
+    c.add_update_assets(args.elemfile, filetype)
+    c.add_rela(args.relfile, args.elemfile, filetype)
 
 
 def delete(args):
@@ -34,6 +35,10 @@ if __name__ == "__main__":
     delete_parser.set_defaults(func=delete)
 
     args = main_parser.parse_args()
+
+    # fix timestamp
+    args.elemfile = args.elemfile.replace('\\', '')
+    args.relfile = args.relfile.replace('\\', '')
 
     if not args.elemfile or not args.relfile:
         print('Please provide both the elements and relationships file')

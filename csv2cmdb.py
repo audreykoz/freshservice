@@ -207,7 +207,7 @@ def add_update_assets(file="", filetype = ""):
     """
     if filetype == "csv": 
         csv_data = pd.read_csv(file)
-    if filetype == "excel": 
+    if filetype == "xlsx":
         csv_data = pd.read_excel(file, usecols = "B:E")
     upload_data = pd.DataFrame(columns=["Name", "Type", "GUID", "Documentation"])
     # cnx = sqlite3.connect('/Users/audreykoziol/Desktop/freshservice/Untitled.sqlite')
@@ -274,7 +274,7 @@ def add_update_assets(file="", filetype = ""):
                                      )
             print(response.content)
 
-def add_rela(rela_data="relations.csv", asset_data="elements.csv"):
+def add_rela(rela_data="relations.csv", asset_data="elements.csv", filetype=""):
     """Add relationships to assets in freshservice CMDB. Assets must exist in the CMDB
     for a relationship to be created.
     Parameters
@@ -286,8 +286,12 @@ def add_rela(rela_data="relations.csv", asset_data="elements.csv"):
         Specifies the exported Archi file that contains assets/CIs that were uploaded to 
         Freshservice. Default value is "elements.csv".
    """
-    rela_data = pd.read_csv(rela_data)
-    asset_data = pd.read_csv(asset_data)
+    if filetype == "csv":
+        rela_data = pd.read_csv(rela_data)
+        asset_data = pd.read_csv(asset_data)
+    if filetype == "xlsx":
+        rela_data = pd.read_excel(rela_data, usecols = "B:G")
+        asset_data = pd.read_excel(asset_data, usecols = "B:E")
     new_data = pd.DataFrame(columns=["Name", "Type", "GUID"])
     new_data.Name = [re.sub(r'\([^)]*\)', '', str(item)) for item in asset_data.Name]
     new_data.Type = [ASSET_DICT[item] for item in asset_data.Type]
