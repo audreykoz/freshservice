@@ -1,6 +1,7 @@
 import argparse
 import csv2cmdb as c
 import re
+import box
 
 
 def ingest(args):
@@ -48,3 +49,7 @@ if __name__ == "__main__":
         main_parser.print_help()
         exit(1)
     args.func(args)
+
+    # upload the files to the archive
+    box.box_upload_elements(args.elemfile)
+    box.box_upload_relations(args.relfile)
