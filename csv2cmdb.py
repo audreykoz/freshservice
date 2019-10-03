@@ -327,7 +327,7 @@ def add_rela(rela_data="relations.csv", asset_data="elements.csv", filetype=""):
             print(f"There was an error uploading a relationship with a source of {item} and a target of {second_item}.")
 
 
-def delete_asset(display_id, permanant=False, asset_type = "asset"):
+def delete_asset(file = '', filetype = '', permanant=False, asset_type = "asset"):
     """Delete a specified Asset/CI from the freshservice CMDB 
     Parameters
     ----------
@@ -335,11 +335,28 @@ def delete_asset(display_id, permanant=False, asset_type = "asset"):
         Specify the display_id of the asset/CI you would like to delete from
         the CMDB.
     """
+#     if filetype == "csv": 
+#         csv_data = pd.read_csv(file)
+#     if filetype == "xlsx":
+#         csv_data = pd.read_excel(file, usecols = "B:E")
+        
+#     upload_data = pd.DataFrame(columns=["Name", "Type", "GUID", "Documentation"])
+#     # cnx = sqlite3.connect('/Users/audreykoziol/Desktop/freshservice/Untitled.sqlite')
+#     # csv_data = pd.read_sql_query("SELECT * FROM elements", cnx)
+#     # print(csv_data['class'])
+#     names = [item for item in csv_data.Name]
+#     types = [ASSET_DICT[item] for item in csv_data.Type]
+#     guids = [item for item in csv_data.ID]    
+        
     headers = {'Content-Type': 'application/json'}
     if asset_type == "asset": 
         ending = ".json"
     if asset_type == "relationship": 
         ending = "/detach_relationship.json"
+        
+        
+    for relationship in csv_data.  
+    
     if not permanant:
         testing = requests.delete(f"https://{fresh.domain}/cmdb/items/{str(display_id)}{ending}",
                                   headers=headers, auth=(fresh.api_key, fresh.password)
