@@ -6,15 +6,25 @@ import box
 
 def ingest(args):
     """Upload the elements and connections to Freshservice"""
-    filetype = re.findall('[^.]*$', args.elemfile)[0]
-    c.add_update_assets(args.elemfile, filetype)
-    c.add_rela(args.relfile, args.elemfile, filetype)
+    c.add_update_assets(args.elemfile, filetype(args.elemfile))
+    c.add_rela(args.relfile, args.elemfile, filetype(args.elemfile))
+    # upload the files to the archive
+    box.box_upload_elements(args.elemfile)
+    box.box_upload_relations(args.relfile)
 
 
 def delete(args):
     """Delete the elements and connections from Freshservice"""
-    # delete_asset ?
-    pass
+    c.mass_delete(args.elemfile,filetype(args.elemfile))
+
+
+def filetype(str):
+    """Extract the filetype from string by using regex
+
+    :param str: string that contains the full name or path of the file
+    :return: str
+    """
+    return re.findall('[^.]*$', str)[0]
 
 
 if __name__ == "__main__":
@@ -37,6 +47,12 @@ if __name__ == "__main__":
 
     args = main_parser.parse_args()
 
+    try:
+        print(args.func)
+    except AttributeError: # there are no subfunctions
+        main_parser.print_help()
+        exit(1)
+
     # fix timestamp
     args.elemfile = args.elemfile.replace('\\', '')
     args.relfile = args.relfile.replace('\\', '')
@@ -45,11 +61,4 @@ if __name__ == "__main__":
         print('Please provide both the elements and relationships file')
         exit(1)
 
-    if not args.func:  # there are no subfunctions
-        main_parser.print_help()
-        exit(1)
     args.func(args)
-
-    # upload the files to the archive
-    box.box_upload_elements(args.elemfile)
-    box.box_upload_relations(args.relfile)

@@ -371,6 +371,29 @@ def delete_asset(file = '', filetype = '', permanant=False, asset_type = "asset"
         return f"Asset #{display_id} deleted permanently"
 
 
+def mass_delete(file="", filetype = ""):
+    """Make delete calls for every asset in the specified file
+
+    :param file: ingest list to parse
+    :param filetype: format of the file
+    :return: None
+    """
+    if filetype == "csv":
+        csv_data = pd.read_csv(file)
+    if filetype == "xlsx":
+        csv_data = pd.read_excel(file, usecols = "B:E")
+    guids = [item for item in csv_data.ID]
+    asset_table = get_assets()
+    for guid in guids:
+        try:
+            record_frame = asset_table.loc[asset_table['asset_tag'] == guid]
+            display_id = record_frame['display_id'].values[0]
+            print('Deleting asset ' + str(display_id) + '//' + guid)
+            delete_asset(display_id)
+        except IndexError:
+            print('Could not find asset ' + guid)
+
+
 def restore_asset(display_id):
     """Restore a deleted Asset/CI from the freshservice CMDB
     Parameters
