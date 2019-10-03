@@ -169,13 +169,11 @@ def get_assets(rela=False, dwnl_csv=False):
         name = requests.get(f"https://{fresh.domain}/cmdb/items.json?page={str(page_num)}",
                             auth=(fresh.user, fresh.password)
                             )
-        get_calls()
-        content = json.loads(name.content)
+        data_content = json.loads(name.content)
         page_num += 1
-        asset_data = pd.DataFrame(content)
-        print(asset_data)
+        asset_data = pd.DataFrame(data_content)
         asset_table = asset_table.append(asset_data, ignore_index=True)
-        if len(content) == 0:
+        if len(data_content) == 0:
             pages_left = False
     if rela:
         asset_table["relationship_data"] = numpy.nan
@@ -223,7 +221,8 @@ def add_update_assets(file="", filetype = ""):
     upload_data.GUID = guids
     upload_data.Documentation = documentation
     current_assets = get_assets()
-    if current_assets is not None:
+    print(current_assets.empty)
+    if current_assets.empty == False:
         #for index, row in current_assets.iterrows():
             #if row["asset_tag"] in list(upload_data['GUID']):
                 #pass
@@ -234,7 +233,10 @@ def add_update_assets(file="", filetype = ""):
                     {'name': re.sub(r'\([^)]*\)', '', str(row.Name)),
                      'ci_type_id': str(row.Type),
                      'description':str(row.Documentation),
-                     'asset_tag':str(row.GUID)
+                     'asset_tag':str(row.GUID),
+                     'level_field_attributes':
+                      {f'file_imported_from_{row.Type}': file
+                      }
                     }
                    }
             data = json.dumps(dump)
@@ -264,7 +266,10 @@ def add_update_assets(file="", filetype = ""):
                     {'name': re.sub(r'\([^)]*\)', '', str(row.Name)),
                      'ci_type_id': str(row.Type),
                      'description':str(row.Documentation),
-                     'asset_tag':str(row.GUID)
+                     'asset_tag':str(row.GUID),
+                     'level_field_attributes':
+                      {f'file_imported_from_{row.Type}': file
+                      }
                     }
                    }
             data = json.dumps(dump)
@@ -352,11 +357,7 @@ def delete_asset(file = '', filetype = '', permanant=False, asset_type = "asset"
     if asset_type == "asset": 
         ending = ".json"
     if asset_type == "relationship": 
-        ending = "/detach_relationship.json"
-        
-        
-    for relationship in csv_data.  
-    
+        ending = "/detach_relationship.json"  
     if not permanant:
         testing = requests.delete(f"https://{fresh.domain}/cmdb/items/{str(display_id)}{ending}",
                                   headers=headers, auth=(fresh.api_key, fresh.password)
