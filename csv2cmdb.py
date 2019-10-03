@@ -332,7 +332,7 @@ def add_rela(rela_data="relations.csv", asset_data="elements.csv", filetype=""):
             print(f"There was an error uploading a relationship with a source of {item} and a target of {second_item}.")
 
 
-def delete_asset(file = '', filetype = '', permanant=False, asset_type = "asset"):
+def delete_asset(display_id, permanant=False, asset_type = "asset"):
     """Delete a specified Asset/CI from the freshservice CMDB 
     Parameters
     ----------
